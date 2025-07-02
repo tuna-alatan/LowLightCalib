@@ -4,236 +4,57 @@ from PIL import Image
 import os
 os.environ["OPENCV_IO_ENABLE_OPENEXR"] = "1"
 import cv2
-import csv
 
 def calculate_patch_means(input_img):
     img = input_img.astype(np.float32) / 255.0 # Write normalized values to CSV
 
     means = []
+    patch_centers = []
+    patch_coords = []
+
+    # Helper to add patch info
+    def add_patch(x, y, w, h):
+        rMean = np.mean(img[y:y+h, x:x+w, 2])
+        gMean = np.mean(img[y:y+h, x:x+w, 1])
+        bMean = np.mean(img[y:y+h, x:x+w, 0])
+        means.append((rMean, gMean, bMean))
+        cx = x + w // 2
+        cy = y + h // 2
+        patch_centers.append((cx, cy))
+        patch_coords.append((x, y, w, h))
 
     # First row
-    x = 212
-    y = 786
-    w = 43
-    h = 29
-    rMean = np.mean(img[y:y+h, x:x+w, 2])
-    gMean = np.mean(img[y:y+h, x:x+w, 1])
-    bMean = np.mean(img[y:y+h, x:x+w, 0])
-    means.append((rMean, gMean, bMean))
-
-    x = 240
-    y = 604
-    w = 45
-    h = 33
-    rMean = np.mean(img[y:y+h, x:x+w, 2])
-    gMean = np.mean(img[y:y+h, x:x+w, 1])
-    bMean = np.mean(img[y:y+h, x:x+w, 0])
-    means.append((rMean, gMean, bMean))
-
-    x = 270
-    y = 426
-    w = 44
-    h = 31
-    rMean = np.mean(img[y:y+h, x:x+w, 2])
-    gMean = np.mean(img[y:y+h, x:x+w, 1])
-    bMean = np.mean(img[y:y+h, x:x+w, 0])
-    means.append((rMean, gMean, bMean))
-
-    x = 290
-    y = 267
-    w = 46
-    h = 29
-    rMean = np.mean(img[y:y+h, x:x+w, 2])
-    gMean = np.mean(img[y:y+h, x:x+w, 1])
-    bMean = np.mean(img[y:y+h, x:x+w, 0])
-    means.append((rMean, gMean, bMean))
-    
+    add_patch(212, 786, 20, 20)
+    add_patch(240, 604, 20, 20)
+    add_patch(270, 426, 20, 20)
+    add_patch(290, 267, 20, 20)
     # Second row
-    x = 460
-    y = 801
-    w = 42
-    h = 29
-    rMean = np.mean(img[y:y+h, x:x+w, 2])
-    gMean = np.mean(img[y:y+h, x:x+w, 1])
-    bMean = np.mean(img[y:y+h, x:x+w, 0])
-    means.append((rMean, gMean, bMean))
-
-    x = 486
-    y = 600
-    w = 52
-    h = 33
-    rMean = np.mean(img[y:y+h, x:x+w, 2])
-    gMean = np.mean(img[y:y+h, x:x+w, 1])
-    bMean = np.mean(img[y:y+h, x:x+w, 0])
-    means.append((rMean, gMean, bMean))
-
-    x = 511
-    y = 431
-    w = 52
-    h = 36
-    rMean = np.mean(img[y:y+h, x:x+w, 2])
-    gMean = np.mean(img[y:y+h, x:x+w, 1])
-    bMean = np.mean(img[y:y+h, x:x+w, 0])
-    means.append((rMean, gMean, bMean))
-
-    x = 521
-    y = 260
-    w = 51
-    h = 33
-    rMean = np.mean(img[y:y+h, x:x+w, 2])
-    gMean = np.mean(img[y:y+h, x:x+w, 1])
-    bMean = np.mean(img[y:y+h, x:x+w, 0])
-    means.append((rMean, gMean, bMean))
-
+    add_patch(460, 801, 20, 20)
+    add_patch(486, 600, 20, 20)
+    add_patch(511, 431, 20, 20)
+    add_patch(521, 260, 20, 20)
     # Third row
-    x = 726
-    y = 810
-    w = 49
-    h = 36
-    rMean = np.mean(img[y:y+h, x:x+w, 2])
-    gMean = np.mean(img[y:y+h, x:x+w, 1])
-    bMean = np.mean(img[y:y+h, x:x+w, 0])
-    means.append((rMean, gMean, bMean))
-
-    x = 713
-    y = 611
-    w = 53
-    h = 37
-    rMean = np.mean(img[y:y+h, x:x+w, 2])
-    gMean = np.mean(img[y:y+h, x:x+w, 1])
-    bMean = np.mean(img[y:y+h, x:x+w, 0])
-    means.append((rMean, gMean, bMean))
-
-    x = 741
-    y = 422
-    w = 54
-    h = 39
-    rMean = np.mean(img[y:y+h, x:x+w, 2])
-    gMean = np.mean(img[y:y+h, x:x+w, 1])
-    bMean = np.mean(img[y:y+h, x:x+w, 0])
-    means.append((rMean, gMean, bMean))
-
-    x = 769
-    y = 270
-    w = 54
-    h = 40
-    rMean = np.mean(img[y:y+h, x:x+w, 2])
-    gMean = np.mean(img[y:y+h, x:x+w, 1])
-    bMean = np.mean(img[y:y+h, x:x+w, 0])
-    means.append((rMean, gMean, bMean))
-
-    # Fourth row	
-    x = 970
-    y = 800
-    w = 52
-    h = 43
-    rMean = np.mean(img[y:y+h, x:x+w, 2])
-    gMean = np.mean(img[y:y+h, x:x+w, 1])
-    bMean = np.mean(img[y:y+h, x:x+w, 0])
-    means.append((rMean, gMean, bMean))
-
-    x = 980
-    y = 600
-    w = 55
-    h = 45
-    rMean = np.mean(img[y:y+h, x:x+w, 2])
-    gMean = np.mean(img[y:y+h, x:x+w, 1])
-    bMean = np.mean(img[y:y+h, x:x+w, 0])
-    means.append((rMean, gMean, bMean))
-
-    x = 1000
-    y = 440
-    w = 56
-    h = 46
-    rMean = np.mean(img[y:y+h, x:x+w, 2])
-    gMean = np.mean(img[y:y+h, x:x+w, 1])
-    bMean = np.mean(img[y:y+h, x:x+w, 0])
-    means.append((rMean, gMean, bMean))
-
-    x = 990
-    y = 280
-    w = 58
-    h = 46
-    rMean = np.mean(img[y:y+h, x:x+w, 2])
-    gMean = np.mean(img[y:y+h, x:x+w, 1])
-    bMean = np.mean(img[y:y+h, x:x+w, 0])
-    means.append((rMean, gMean, bMean))
-
+    add_patch(726, 810, 20, 20)
+    add_patch(713, 611, 20, 20)
+    add_patch(741, 422, 20, 20)
+    add_patch(769, 270, 20, 20)
+    # Fourth row
+    add_patch(970, 800, 20, 20)
+    add_patch(980, 600, 20, 20)
+    add_patch(1000, 440, 20, 20)
+    add_patch(990, 280, 20, 20)
     # Fifth row
-    x = 1230
-    y = 800
-    w = 53
-    h = 45
-    rMean = np.mean(img[y:y+h, x:x+w, 2])
-    gMean = np.mean(img[y:y+h, x:x+w, 1])
-    bMean = np.mean(img[y:y+h, x:x+w, 0])
-    means.append((rMean, gMean, bMean))
-
-    x = 1220
-    y = 620
-    w = 61
-    h = 50
-    rMean = np.mean(img[y:y+h, x:x+w, 2])
-    gMean = np.mean(img[y:y+h, x:x+w, 1])
-    bMean = np.mean(img[y:y+h, x:x+w, 0])
-    means.append((rMean, gMean, bMean))
-
-    x = 1220
-    y = 440
-    w = 60
-    h = 53
-    rMean = np.mean(img[y:y+h, x:x+w, 2])
-    gMean = np.mean(img[y:y+h, x:x+w, 1])
-    bMean = np.mean(img[y:y+h, x:x+w, 0])
-    means.append((rMean, gMean, bMean))
-
-    x = 1220
-    y = 285
-    w = 64
-    h = 52
-    rMean = np.mean(img[y:y+h, x:x+w, 2])
-    gMean = np.mean(img[y:y+h, x:x+w, 1])
-    bMean = np.mean(img[y:y+h, x:x+w, 0])
-    means.append((rMean, gMean, bMean))
-
+    add_patch(1230, 800, 20, 20)
+    add_patch(1220, 620, 20, 20)
+    add_patch(1220, 440, 20, 20)
+    add_patch(1220, 285, 20, 20)
     # Sixth row
-    x = 1500
-    y = 820
-    w = 54
-    h = 54
-    rMean = np.mean(img[y:y+h, x:x+w, 2])
-    gMean = np.mean(img[y:y+h, x:x+w, 1])
-    bMean = np.mean(img[y:y+h, x:x+w, 0])
-    means.append((rMean, gMean, bMean))
+    add_patch(1500, 820, 20, 20)
+    add_patch(1500, 610, 20, 20)
+    add_patch(1470, 450, 20, 20)
+    add_patch(1450, 290, 20, 20)
 
-    x = 1500
-    y = 610
-    w = 61
-    h = 56
-    rMean = np.mean(img[y:y+h, x:x+w, 2])
-    gMean = np.mean(img[y:y+h, x:x+w, 1])
-    bMean = np.mean(img[y:y+h, x:x+w, 0])
-    means.append((rMean, gMean, bMean))
-
-    x = 1470
-    y = 450
-    w = 64
-    h = 56
-    rMean = np.mean(img[y:y+h, x:x+w, 2])
-    gMean = np.mean(img[y:y+h, x:x+w, 1])
-    bMean = np.mean(img[y:y+h, x:x+w, 0])
-    means.append((rMean, gMean, bMean))
-
-    x = 1450
-    y = 290
-    w = 63
-    h = 57
-    rMean = np.mean(img[y:y+h, x:x+w, 2])
-    gMean = np.mean(img[y:y+h, x:x+w, 1])
-    bMean = np.mean(img[y:y+h, x:x+w, 0])
-    means.append((rMean, gMean, bMean))
-   
-    return means
+    return means, patch_centers
 
 
 def computeCCM(XYZ_values, RGB_values, white_point):
@@ -305,12 +126,10 @@ def linear_to_srgb(rgb):
 
 
 if __name__ == "__main__":
-
     # Use a TIFF image as input instead of a raw .bin file
     tiff_img_path = "./input_images/16mm_f1_4_exp1_15_gain25.tiff"  # Change this path as needed
 
-
-    input_img = cv2.imread(tiff_img_path, cv2.IMREAD_COLOR_BGR)
+    input_img = cv2.imread(tiff_img_path, cv2.IMREAD_COLOR)
     if input_img is None or input_img.size == 0:
         raise FileNotFoundError(f"Could not read TIFF image at {tiff_img_path}")
 
@@ -318,14 +137,30 @@ if __name__ == "__main__":
     if len(input_img.shape) == 2:
         input_img = np.stack([input_img]*3, axis=-1)
 
-    #linear_input_img = srgb_to_linear(input_img / 255.0)  # Convert to linear RGB in [0, 1] range
-    means = calculate_patch_means(input_img)
+    means, patch_centers = calculate_patch_means(input_img)
     print("Means: ", means)
     np.savetxt("image_data.csv", means, delimiter=",")
 
     finalResult = calibrate(input_img)
 
+    # Show input and output images side by side using matplotlib
+    fig, axes = plt.subplots(1, 2, figsize=(12, 6))
+    # Draw squares on input image
+    input_img_disp = cv2.cvtColor(input_img.copy(), cv2.COLOR_BGR2RGB)
+    for cx, cy in patch_centers:
+        x0 = int(cx - 20)
+        y0 = int(cy - 20)
+        x1 = int(cx + 20)
+        y1 = int(cy + 20)
+        input_img_disp = cv2.rectangle(input_img_disp, (x0, y0), (x1, y1), (0, 255, 0), 2)
+    axes[0].imshow(input_img_disp)
+    axes[0].set_title('Input Image')
+    axes[0].axis('off')
+    axes[1].imshow(cv2.cvtColor(finalResult, cv2.COLOR_BGR2RGB))
+    axes[1].set_title('Output Image')
+    axes[1].axis('off')
+    plt.tight_layout()
+    plt.show()
+
     cv2.imwrite('final_result.png', finalResult)
-    cv2.imshow('Final result', finalResult)
-    cv2.waitKey(0)
     print("HALT")

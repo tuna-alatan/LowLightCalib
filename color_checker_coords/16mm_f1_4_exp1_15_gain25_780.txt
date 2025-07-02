@@ -1,0 +1,50 @@
+def calculate_patch_means(input_img):
+    img = input_img.astype(np.float32) / 255.0 # Write normalized values to CSV
+
+    means = []
+    patch_centers = []
+    patch_coords = []
+
+    # Helper to add patch info
+    def add_patch(x, y, w, h):
+        rMean = np.mean(img[y:y+h, x:x+w, 2])
+        gMean = np.mean(img[y:y+h, x:x+w, 1])
+        bMean = np.mean(img[y:y+h, x:x+w, 0])
+        means.append((rMean, gMean, bMean))
+        cx = x + w // 2
+        cy = y + h // 2
+        patch_centers.append((cx, cy))
+        patch_coords.append((x, y, w, h))
+
+    # First row
+    add_patch(70, 730, 20, 20)
+    add_patch(130, 560, 20, 20)
+    add_patch(180, 380, 20, 20)
+    add_patch(240, 220, 20, 20)
+    # Second row
+    add_patch(300, 780, 20, 20)
+    add_patch(370, 590, 20, 20)
+    add_patch(420, 420, 20, 20)
+    add_patch(460, 250, 20, 20)
+    # Third row
+    add_patch(550, 810, 20, 20)
+    add_patch(600, 630, 20, 20)
+    add_patch(650, 470, 20, 20)
+    add_patch(700, 290, 20, 20)
+    # Fourth row
+    add_patch(800, 860, 20, 20)
+    add_patch(840, 660, 20, 20)
+    add_patch(900, 510, 20, 20)
+    add_patch(930, 330, 20, 20)
+    # Fifth row
+    add_patch(1050, 900, 20, 20)
+    add_patch(1080, 700, 20, 20)
+    add_patch(1120, 540, 20, 20)
+    add_patch(1170, 370, 20, 20)
+    # Sixth row
+    add_patch(1300, 950, 20, 20)
+    add_patch(1330, 750, 20, 20)
+    add_patch(1360, 580, 20, 20)
+    add_patch(1400, 400, 20, 20)
+
+    return means, patch_centers
