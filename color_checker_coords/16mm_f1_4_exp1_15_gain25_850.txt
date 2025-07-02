@@ -46,3 +46,5 @@ def calculate_patch_means(input_img):
     add_patch(1350, 650, 20, 20)
     add_patch(1380, 480, 20, 20)
     add_patch(1400, 310, 20, 20)
+
+    return means, patch_centers
