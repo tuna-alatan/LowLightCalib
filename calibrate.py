@@ -7,6 +7,7 @@ import cv2
 
 def calculate_patch_means(input_img):
     img = input_img.astype(np.float32) / 255.0 # Write normalized values to CSV
+    #img = input_img
 
     means = []
     patch_centers = []
@@ -57,7 +58,7 @@ def calculate_patch_means(input_img):
     return means, patch_centers
 
 
-def computeCCM(XYZ_values, RGB_values, white_point):
+def computeCCM(XYZ_values, RGB_values, ground_truth_RGB_values,white_point):
     d65 = np.array([0.9504, 1, 1.0888], dtype=np.float32)
 
     XYZ_to_sRGB =  np.array([[3.2404542, -1.5371385, -0.4985314],
@@ -67,6 +68,7 @@ def computeCCM(XYZ_values, RGB_values, white_point):
     M_CA = np.diag(d65 / white_point)
 
     XYZ_vector = XYZ_values.reshape(-1, 1)
+    RGB_vector = ground_truth_RGB_values.reshape(-1, 1)
 
     A = np.zeros((72, 9), dtype=np.float32)
 
@@ -79,6 +81,7 @@ def computeCCM(XYZ_values, RGB_values, white_point):
     
     CAM_to_XYZ = np.linalg.lstsq(A, XYZ_vector, rcond=None)[0].reshape(3, 3)
     CAM_to_sRGB = XYZ_to_sRGB @ M_CA @ CAM_to_XYZ
+    #CAM_to_sRGB = np.linalg.lstsq(A, RGB_vector, rcond=None)[0].reshape(3, 3)
 
     return CAM_to_sRGB
     
@@ -87,10 +90,11 @@ def calibrate(input_img):
     # Assumes the input image to be in BGR order
     # Returns the result in BGR order as well
     XYZ_values = np.loadtxt('measurement_results.csv', delimiter=',').astype(np.float32)
+    ground_truth_RGB_values = np.loadtxt('ground_truth_srgb.csv', delimiter=',').astype(np.float32)
     RGB_values = np.loadtxt('image_data.csv', delimiter=',').astype(np.float32)
 
     white_point = np.array([1, 1, 1], dtype=np.float32)
-    CAM_to_sRGB = computeCCM(XYZ_values, RGB_values, white_point)
+    CAM_to_sRGB = computeCCM(XYZ_values, RGB_values, ground_truth_RGB_values, white_point)
 
     img = input_img.astype(np.float32) / 255.0 # Use the [0, 1] range
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
@@ -105,7 +109,7 @@ def calibrate(input_img):
     img = img.reshape(orig_shape)
 
     # Gamma correction
-    #img = linear_to_srgb(img)  # Convert to sRGB
+    img = simple_linear_to_srgb(img)  # Convert to sRGB
 
     img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
     img = (img * 255).astype(np.uint8)
@@ -117,6 +121,14 @@ def srgb_to_linear(rgb):
     mask = rgb <= 0.04045
     linear = np.where(mask, rgb / 12.92, ((rgb + 0.055) / 1.055) ** 2.4)
     return linear
+
+def simple_srgb_to_linear(rgb):
+    linear = np.power(rgb, 2.2)
+    return linear
+
+def simple_linear_to_srgb(rgb):
+    srgb = np.power(rgb, 1/2.2)
+    return srgb
 
 def linear_to_srgb(rgb):
     rgb = np.clip(rgb, 0, 1)
@@ -137,11 +149,12 @@ if __name__ == "__main__":
     if len(input_img.shape) == 2:
         input_img = np.stack([input_img]*3, axis=-1)
 
-    means, patch_centers = calculate_patch_means(input_img)
+    linear_img = simple_srgb_to_linear(input_img.astype(np.float32) / 255.0) * 255.0
+    means, patch_centers = calculate_patch_means(linear_img)
     print("Means: ", means)
     np.savetxt("image_data.csv", means, delimiter=",")
 
-    finalResult = calibrate(input_img)
+    finalResult = calibrate(linear_img)
 
     # Show input and output images side by side using matplotlib
     fig, axes = plt.subplots(1, 2, figsize=(12, 6))
@@ -160,6 +173,7 @@ if __name__ == "__main__":
     axes[1].set_title('Output Image')
     axes[1].axis('off')
     plt.tight_layout()
+    plt.savefig('comparison.png')  # Save the comparison image
     plt.show()
 
     cv2.imwrite('final_result.png', finalResult)
