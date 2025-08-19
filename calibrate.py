@@ -84,7 +84,7 @@ def computeCCM(RGB_values, white_point, gamma_corrected):
     data = colour.CCS_COLOURCHECKERS['cc2005'][1]  # [1] = data (OrderedDict)
     xyY = np.array(list(data.values()))  # shape (24, 3)
 
-    # Step 2: Convert xyY to XYZ
+    # Convert xyY to XYZ
     XYZ = np.array([colour.xyY_to_XYZ(xyy) for xyy in xyY])  # shape (24, 3)
 
     XYZ_vector = XYZ.reshape(-1, 1).astype(np.float32)

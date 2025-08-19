@@ -6,3 +6,4 @@ equalization_comp/
 color_checker_coords/
 final_results/
 input_images/*
+!.gitkeep
