@@ -4,10 +4,12 @@ from PIL import Image
 import os
 os.environ["OPENCV_IO_ENABLE_OPENEXR"] = "1"
 import cv2
+import colour
 
 def calculate_patch_means(input_img):
     img = input_img.astype(np.float32) / 255.0 # Write normalized values to CSV
     #img = input_img
+
 
     means = []
     patch_centers = []
@@ -25,50 +27,50 @@ def calculate_patch_means(input_img):
         patch_coords.append((x, y, w, h))
 
     # First row
-    add_patch(212, 786, 43, 29)
-    add_patch(240, 604, 45, 33)
-    add_patch(270, 426, 44, 31)
-    add_patch(290, 267, 46, 29)
+    add_patch(290, 267, 46, 29) # Dark Skin
+    add_patch(521, 260, 51, 33) # Light Skin
+    add_patch(769, 270, 54, 40) # Blue Sky
+    add_patch(990, 280, 58, 46) # Foliage
+    add_patch(1220, 285, 64, 52) # Blue Flower
+    add_patch(1450, 290, 63, 57) # Bluish Green
+    
     # Second row
-    add_patch(460, 801, 42, 29)
-    add_patch(486, 600, 52, 33)
-    add_patch(511, 431, 52, 36)
-    add_patch(521, 260, 51, 33)
+    add_patch(270, 426, 44, 31) # Orange
+    add_patch(511, 431, 52, 36) # Purplish Blue
+    add_patch(741, 422, 54, 39) # Moderate Red
+    add_patch(1000, 440, 56, 46) # Purple
+    add_patch(1220, 440, 60, 53) # Yellow Green
+    add_patch(1470, 450, 64, 56) # Orange Yellow
+    
     # Third row
-    add_patch(726, 810, 49, 36)
-    add_patch(713, 611, 53, 37)
-    add_patch(741, 422, 54, 39)
-    add_patch(769, 270, 54, 40)
+    add_patch(240, 604, 45, 33) # Blue
+    add_patch(486, 600, 52, 33) # Green
+    add_patch(713, 611, 53, 37) # Red
+    add_patch(980, 600, 55, 45) # Yellow 
+    add_patch(1220, 620, 61, 50) # Magenta
+    add_patch(1500, 610, 61, 56) # Cyan
+    
     # Fourth row
-    add_patch(970, 800, 52, 43)
-    add_patch(980, 600, 55, 45)
-    add_patch(1000, 440, 56, 46)
-    add_patch(990, 280, 58, 46)
-    # Fifth row
-    add_patch(1230, 800, 53, 45)
-    add_patch(1220, 620, 61, 50)
-    add_patch(1220, 440, 60, 53)
-    add_patch(1220, 285, 64, 52)
-    # Sixth row
-    add_patch(1500, 820, 54, 54)
-    add_patch(1500, 610, 61, 56)
-    add_patch(1470, 450, 64, 56)
-    add_patch(1450, 290, 63, 57)
+    add_patch(212, 786, 43, 29) # White
+    add_patch(460, 801, 42, 29) # Neutral 8
+    add_patch(726, 810, 49, 36) # Neutral 6.5
+    add_patch(970, 800, 52, 43) # Neutral 5
+    add_patch(1230, 800, 53, 45) # Neutral 3.5
+    add_patch(1500, 820, 54, 54) # Black 2
 
     return means, patch_centers
 
 
-def computeCCM(XYZ_values, RGB_values, ground_truth_RGB_values,white_point):
+def computeCCM(RGB_values, white_point, gamma_corrected):
     d65 = np.array([0.9504, 1, 1.0888], dtype=np.float32)
 
     XYZ_to_sRGB =  np.array([[3.2404542, -1.5371385, -0.4985314],
                              [-0.9692660, 1.8760108, 0.0415560],
                              [0.0556434, -0.2040259, 1.0572252]], dtype=np.float32)
     
+    sRGB_to_XYZ = np.linalg.inv(XYZ_to_sRGB)
+     
     M_CA = np.diag(d65 / white_point)
-
-    XYZ_vector = XYZ_values.reshape(-1, 1)
-    RGB_vector = ground_truth_RGB_values.reshape(-1, 1)
 
     A = np.zeros((72, 9), dtype=np.float32)
 
@@ -78,23 +80,34 @@ def computeCCM(XYZ_values, RGB_values, ground_truth_RGB_values,white_point):
         A[k + 1, 3:6] = RGB_values[i, :]
         A[k + 2, 6:9] = RGB_values[i, :]
         k += 3
-    
+
+    data = colour.CCS_COLOURCHECKERS['cc2005'][1]  # [1] = data (OrderedDict)
+    xyY = np.array(list(data.values()))  # shape (24, 3)
+
+    # Step 2: Convert xyY to XYZ
+    XYZ = np.array([colour.xyY_to_XYZ(xyy) for xyy in xyY])  # shape (24, 3)
+
+    XYZ_vector = XYZ.reshape(-1, 1).astype(np.float32)
+
+
     CAM_to_XYZ = np.linalg.lstsq(A, XYZ_vector, rcond=None)[0].reshape(3, 3)
     CAM_to_sRGB = XYZ_to_sRGB @ M_CA @ CAM_to_XYZ
-    #CAM_to_sRGB = np.linalg.lstsq(A, RGB_vector, rcond=None)[0].reshape(3, 3)
+
+    patch_RGB_values = RGB_values @ CAM_to_sRGB.T
+    
+    if(gamma_corrected):
+        # Gamma Correction
+        patch_RGB_values = linear_to_srgb(patch_RGB_values)
 
     return CAM_to_sRGB
     
-
-def calibrate(input_img):
-    # Assumes the input image to be in BGR order
-    # Returns the result in BGR order as well
+def calibrate(input_img, gamma_corrected):
+    # measurement_results.csv contains the measured XYZ values but for this implementation, we use the data from colour library
     XYZ_values = np.loadtxt('measurement_results.csv', delimiter=',').astype(np.float32)
-    ground_truth_RGB_values = np.loadtxt('ground_truth_srgb.csv', delimiter=',').astype(np.float32)
     RGB_values = np.loadtxt('image_data.csv', delimiter=',').astype(np.float32)
 
     white_point = np.array([1, 1, 1], dtype=np.float32)
-    CAM_to_sRGB = computeCCM(XYZ_values, RGB_values, ground_truth_RGB_values, white_point)
+    CAM_to_sRGB = computeCCM(RGB_values, white_point, gamma_corrected)
 
     img = input_img.astype(np.float32) / 255.0 # Use the [0, 1] range
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
@@ -103,14 +116,14 @@ def calibrate(input_img):
     
     # Color correction happens here
     img = img @ CAM_to_sRGB.T
-    img /= 60 # Some kind of digital gain
     img = np.clip(img, 0, 1)
 
+    #img /= 60
+    if (gamma_corrected):
+        # Gamma correction
+        img = simple_linear_to_srgb(img)  # Convert to sRGB
+
     img = img.reshape(orig_shape)
-
-    # Gamma correction
-    img = simple_linear_to_srgb(img)  # Convert to sRGB
-
     img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
     img = (img * 255).astype(np.uint8)
 
@@ -140,6 +153,8 @@ def linear_to_srgb(rgb):
 if __name__ == "__main__":
     # Use a TIFF image as input instead of a raw .bin file
     tiff_img_path = "./input_images/16mm_f1_4_exp1_15_gain25.tiff"  # Change this path as needed
+    gamma_corrected = True
+    hist_equalization = True
 
     input_img = cv2.imread(tiff_img_path, cv2.IMREAD_COLOR)
     if input_img is None or input_img.size == 0:
@@ -149,17 +164,27 @@ if __name__ == "__main__":
     if len(input_img.shape) == 2:
         input_img = np.stack([input_img]*3, axis=-1)
 
-    linear_img = simple_srgb_to_linear(input_img.astype(np.float32) / 255.0) * 255.0
-    means, patch_centers = calculate_patch_means(linear_img)
-    print("Means: ", means)
+    if(hist_equalization):
+    # HE (histogram equalization) on V channel in HSV
+        img_hsv = cv2.cvtColor(input_img, cv2.COLOR_BGR2HSV)
+        h, s, v = cv2.split(img_hsv)
+        v_equalized = cv2.equalizeHist(v)
+        img_hsv_equalized = cv2.merge((h, s, v_equalized))
+        input_img = cv2.cvtColor(img_hsv_equalized, cv2.COLOR_HSV2BGR)
+
+    if (gamma_corrected):
+        input_img = simple_srgb_to_linear(input_img.astype(np.float32) / 255.0) * 255.0
+
+    means, patch_centers = calculate_patch_means(input_img)
+    #print("Means: ", means)
     np.savetxt("image_data.csv", means, delimiter=",")
 
-    finalResult = calibrate(linear_img)
+    finalResult = calibrate(input_img, gamma_corrected)
 
     # Show input and output images side by side using matplotlib
     fig, axes = plt.subplots(1, 2, figsize=(12, 6))
     # Draw squares on input image
-    input_img_disp = cv2.cvtColor(input_img.copy(), cv2.COLOR_BGR2RGB)
+    input_img_disp = cv2.cvtColor(input_img.copy(), cv2.COLOR_BGR2RGB).astype(np.uint8)
     for cx, cy in patch_centers:
         x0 = int(cx - 20)
         y0 = int(cy - 20)
