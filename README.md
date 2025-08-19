@@ -7,7 +7,7 @@ This script estimates a **Color Correction Matrix (CCM)** from a Macbeth ColorCh
 ## Features
 
 * Samples 24 ColorChecker patches (hard‑coded coordinates).
-* Computes a least‑squares CCM mapping camera RGB → sRGB.
+* Computes a least‑squares CCM mapping camera sRGB → calibrated sRGB.
 * Optional gamma handling and histogram equalization.
 * Saves:
 
@@ -40,13 +40,6 @@ This script estimates a **Color Correction Matrix (CCM)** from a Macbeth ColorCh
 ## Notes
 
 * Patch coordinates in `calculate_patch_means` must match your image’s chart.
-* To keep the folder but ignore actual images:
-
-  ```gitignore
-  input_images/*
-  !.gitkeep
-  ```
-
 ---
 
 ## Credits
